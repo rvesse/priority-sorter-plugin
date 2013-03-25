@@ -9,3 +9,17 @@ hardware is limited.
 Maintainer
 
 Brad Larson - bklarson@gmail.com
+
+
+-------------
+
+TODO
+
+This fork was created by Rob Vesse to attempt to extend the plugin with some/all of 
+the following functionality:
+
+- Support multiple prioritization criteria e.g.
+ - Run faster builds first
+ - Run recently failed builds first
+- Address some reported bugs with the plugin that appear trivial
+ - JENKINS-16247
