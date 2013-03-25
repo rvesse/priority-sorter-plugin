@@ -4,5 +4,5 @@
   Since we don't really have anything dynamic here, let's just use static HTML. 
 -->
 <div>
-  This plugin allows for the build queue to be sorted based on pre-assigned priorities for each job.
+  This plugin allows for the build queue to be sorted based on pre-assigned priorities for each job.  Differing priority criteria may be enabled as desired.
 </div>

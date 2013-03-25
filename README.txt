@@ -22,4 +22,4 @@ the following functionality:
  - Run faster builds first
  - Run recently failed builds first
 - Address some reported bugs with the plugin that appear trivial
- - JENKINS-16247
+ - JENKINS-16247 (DONE)
