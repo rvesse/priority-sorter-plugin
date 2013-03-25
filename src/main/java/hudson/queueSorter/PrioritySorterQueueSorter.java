@@ -26,49 +26,47 @@ package hudson.queueSorter;
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Queue.BuildableItem;
-import hudson.model.queue.QueueSorter;
+import hudson.model.queue.AbstractQueueSorterImpl;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
+/**
+ * A queue sorter that uses priority based sorting, if no priorities are set or jobs have equal priorities then the default sort order (FIFO) is preserved
+ *
+ */
 @Extension
-public class PrioritySorterQueueSorter extends QueueSorter {
+public class PrioritySorterQueueSorter extends AbstractQueueSorterImpl {
 
-	private static final class BuildableComparitor implements
-			Comparator<BuildableItem> {
-
-		public int compare(BuildableItem arg0, BuildableItem arg1) {
-			// Note that we sort these backwards because we want to return
-			// higher-numbered items first.
-			Integer priority1 = getPriority(arg1);
-			return priority1.compareTo(getPriority(arg0));
-		}
-
-		private static int getPriority(BuildableItem buildable) {
-			if (!(buildable.task instanceof AbstractProject)) {
-				// This shouldn't happen... but just in case, let's give this
-				// task a really low priority so jobs with valid priorities
-				// which do work will get built first.
-				return 0;
-			}
-			AbstractProject<?, ?> project = (AbstractProject<?, ?>) buildable.task;
-			PrioritySorterJobProperty priority = project
-					.getProperty(PrioritySorterJobProperty.class);
-			if (priority != null) {
-				return priority.priority;
-			} else {
-				// No priority has been set for this job - use the
-				// default
-				return PrioritySorterDefaults.getDefault();
-			}
+    @Override
+	public int compare(BuildableItem lhs, BuildableItem rhs) {
+		// Note that we sort these backwards because we want to return
+		// higher-numbered items first.
+		Integer rhsPri = getPriority(rhs);
+		Integer lhsPri = getPriority(lhs);
+		int c = rhsPri.compareTo(lhsPri);
+		if (c == 0) {
+		    // Use default sort order
+		    return super.compare(lhs, rhs);
+		} else {
+		    // Sorted by priority
+		    return c;
 		}
 	}
 
-	private static final BuildableComparitor comparitor = new BuildableComparitor();
-
-	@Override
-	public void sortBuildableItems(List<BuildableItem> buildables) {
-		Collections.sort(buildables, comparitor);
+	private static int getPriority(BuildableItem buildable) {
+		if (!(buildable.task instanceof AbstractProject)) {
+			// This shouldn't happen... but just in case, let's give this
+			// task a really low priority so jobs with valid priorities
+			// which do work will get built first.
+			return 0;
+		}
+		AbstractProject<?, ?> project = (AbstractProject<?, ?>) buildable.task;
+		PrioritySorterJobProperty priority = project
+				.getProperty(PrioritySorterJobProperty.class);
+		if (priority != null) {
+			return priority.priority;
+		} else {
+			// No priority has been set for this job - use the
+			// default
+			return PrioritySorterDefaults.getDefault();
+		}
 	}
 }
