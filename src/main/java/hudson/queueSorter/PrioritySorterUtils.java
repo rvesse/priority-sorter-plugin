@@ -27,6 +27,7 @@ package hudson.queueSorter;
 import java.util.List;
 
 import groovy.lang.Buildable;
+import hudson.model.HealthReport;
 import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Queue.BuildableItem;
@@ -83,6 +84,7 @@ public class PrioritySorterUtils {
      * @return Average Duration if at least {@code minBuilds} present, otherwise
      *         -1
      */
+    @SuppressWarnings("rawtypes")
     static long getAverageBuildDuration(BuildableItem buildable, int minBuilds) {
         if (!(buildable.task instanceof Job)) {
             // Assume this is rare, if this happens then average duration is -1
@@ -144,13 +146,13 @@ public class PrioritySorterUtils {
      * @param threshold
      *            Threshold for build duration above which a build is considered
      *            slow
-     * @return Boosted priority
+     * @return Priority Boost
      */
     static double getPriorityBoostForBuildDuration(double averageDuration, double waitTime, double threshold) {
         // If average duration is unknown apply no boost
-        if (averageDuration == -1) return 1.0d;
-        
-        
+        if (averageDuration == -1)
+            return 1.0d;
+
         // Compute the boost based on how the average duration corresponds to
         // the provided threshold. This also takes into account how long a build
         // has been waiting relative to its average duration so that builds that
@@ -171,7 +173,7 @@ public class PrioritySorterUtils {
                 // The first component of this is the average duration relative
                 // to the threshold
                 factor = (threshold / averageDuration);
-                
+
                 // The second component of this is how long the job has been
                 // waiting relative to its average duration
                 if (waitTime > 0) {
@@ -200,4 +202,44 @@ public class PrioritySorterUtils {
         return factor;
     }
 
+    /**
+     * Gets the health score of a buildable item
+     * 
+     * @param buildable
+     *            Buildable Item
+     * @return Health score in range 0-100
+     */
+    static double getHealth(BuildableItem buildable) {
+        if (!(buildable.task instanceof Job)) {
+            // Assume this is rare, if this happens then health is 100 i.e.
+            // assumed healthy
+            return 100;
+        }
+
+        Job<?, ?> job = (Job<?, ?>) buildable.task;
+        return job.getBuildHealth().getScore();
+    }
+
+    /**
+     * Gets the priority boost based upon the build health
+     * <p>
+     * The {@code positive} parameter controls whether unhealthy builds receive
+     * a positive boost or whether they receive a negative boost. If set to true
+     * an unhealthy build will be given increased priority i.e. if a build has
+     * recently failed you want to try building it again sooner. If set to false
+     * an unhealthy build will be given a reduced priority i.e. if a build has
+     * recently failed you want it to wait longer before building it again.
+     * </p>
+     * 
+     * @param health
+     *            Build Health
+     * @param positive
+     *            Whether to adjust positively or not
+     * @return Priority Boost in the range of 0.5 to 1.5
+     */
+    static double getPriorityBoostForBuildHealth(double health, boolean positive) {
+        double adjust = ((100d - health) / 100d);
+        adjust /= 2d;
+        return positive ? 1.0d + adjust : 1.0d - adjust;
+    }
 }
