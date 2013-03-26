@@ -26,6 +26,7 @@ package hudson.queueSorter;
 
 import java.util.List;
 
+import groovy.lang.Buildable;
 import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Queue.BuildableItem;
@@ -75,29 +76,18 @@ public class PrioritySorterUtils {
     }
 
     /**
-     * Boost the priority based upon build duration
-     * <p>
-     * Computes the boosted priority for a buildable item, the boosted priority
-     * includes one/more applicable boosts depending on the item. The primary
-     * boost applied is that fast builds have their priority increased. However
-     * the exact amount of boost may vary depending on the wait time of the
-     * item. Items are boosted more if their wait time is below their average
-     * duration or if they would usually be reduced in priority but have been
-     * waiting more than their average duration.
-     * </p>
+     * Gets the average build duration
      * 
      * @param buildable
      *            Buildable Item
-     * @param basePriority
-     *            Base Priority for the item
-     * @param threshold
-     *            Threshold for build duration
-     * @return Boosted priority
+     * @return Average Duration if at least {@code minBuilds} present, otherwise
+     *         -1
      */
-    static int boostPriorityByBuildDuration(BuildableItem buildable, int basePriority, long threshold) {
+    static long getAverageBuildDuration(BuildableItem buildable, int minBuilds) {
         if (!(buildable.task instanceof Job)) {
-            // Assume this is rare, if this happens leave base priority alone
-            return basePriority;
+            // Assume this is rare, if this happens then average duration is -1
+            // i.e. unknown
+            return -1;
         }
 
         // Maybe there is a more elegant way of doing this but Java generics
@@ -115,23 +105,56 @@ public class PrioritySorterUtils {
             }
         }
 
-        // Don't boost priority for jobs with few builds because their average
-        // build time is unlikely to be a good indicator of whether they should
-        // be prioritized higher
-        if (runCount < 10)
-            return basePriority;
+        // Don't calculate average for jobs with few builds because their
+        // average build time is unlikely to be accurate since they likely
+        // reflect new projects whose contents may be in flux
+        if (runCount < minBuilds)
+            return -1;
 
-        // Now we can compute the average duration and wait time
-        long averageDuration = totalDuration / runCount;
-        long waitTime = System.currentTimeMillis() - buildable.buildableStartMilliseconds;
+        return totalDuration / runCount;
+    }
 
-        // We then boost the base priority based on how the average duration
-        // corresponds to
+    /**
+     * Computes the wait time for a buildable item
+     * 
+     * @param buildable
+     *            Buildable Item
+     * @return Wait Time in milliseconds
+     */
+    static long getWaitTime(BuildableItem buildable) {
+        return System.currentTimeMillis() - buildable.buildableStartMilliseconds;
+    }
+
+    /**
+     * Gets the priority boost based upon build duration
+     * <p>
+     * Computes the boosted priority for a buildable item, the boosted priority
+     * includes one/more applicable boosts depending on the item. The primary
+     * boost applied is that fast builds have their priority increased. However
+     * the exact amount of boost may vary depending on the wait time of the
+     * item. Items are boosted more if their wait time is below their average
+     * duration or if they would usually be reduced in priority but have been
+     * waiting more than their average duration.
+     * </p>
+     * 
+     * @param averageDuration
+     *            Average Duration for a build
+     * @param waitTime
+     *            How long the build has been waiting
+     * @param threshold
+     *            Threshold for build duration above which a build is considered
+     *            slow
+     * @return Boosted priority
+     */
+    static double getPriorityBoostForBuildDuration(double averageDuration, double waitTime, double threshold) {
+        // If average duration is unknown apply no boost
+        if (averageDuration == -1) return 1.0d;
+        
+        
+        // Compute the boost based on how the average duration corresponds to
         // the provided threshold. This also takes into account how long a build
-        // has
-        // been waiting relative to its average duration so that builds that are
-        // slow
-        // don't always get pushed down the priority list
+        // has been waiting relative to its average duration so that builds that
+        // are slow don't always get pushed down the priority list
         double factor = 1.0d;
         if (averageDuration >= threshold) {
             // This is a slow build per plugin configuration
@@ -139,38 +162,32 @@ public class PrioritySorterUtils {
             // If the wait time has exceeded the average duration then we will
             // not boost priority
             if (waitTime >= averageDuration) {
-                // TODO: This should likely positively boost the priority of a
-                // job rather than leave
-                // it untouched
-                factor = 1.0d;
+                // Is a slow build but has been waiting a long time so actually
+                // boost priority
+                factor = (waitTime / averageDuration);
             } else {
                 // Decrease priority appropriately
 
                 // The first component of this is the average duration relative
                 // to the threshold
-                long reducer = (averageDuration / threshold);
-
+                factor = (threshold / averageDuration);
+                
                 // The second component of this is how long the job has been
-                // waiting relative
-                // to its average duration
-                reducer = reducer / (waitTime / averageDuration);
-
-                // The 1 / is necessary because with a slow job the factor will
-                // be a large number
-                // and we want to reduce not increase the priority
-                factor = 1 / reducer;
+                // waiting relative to its average duration
+                if (waitTime > 0) {
+                    factor = factor + (waitTime / (averageDuration * 2));
+                }
             }
         } else {
             // This is a fast build per plugin configuration
 
             // Boost priority by a factor of the average duration relative to
             // the threshold
-            long increaser = (threshold / averageDuration);
+            double increaser = (threshold / averageDuration);
 
             // If we've been waiting longer than our average duration we should
-            // apply
-            // an additional boost
-            if (waitTime >= averageDuration) {
+            // apply an additional boost
+            if (waitTime > averageDuration) {
                 increaser = increaser * (waitTime / averageDuration);
             }
 
@@ -180,7 +197,7 @@ public class PrioritySorterUtils {
         // TODO: Cap min/max factor appropriately so jobs don't get horrendously
         // boosted
 
-        return (int) (factor * basePriority);
+        return factor;
     }
 
 }
