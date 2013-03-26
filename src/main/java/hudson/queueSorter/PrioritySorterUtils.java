@@ -146,7 +146,7 @@ public class PrioritySorterUtils {
      * @param threshold
      *            Threshold for build duration above which a build is considered
      *            slow
-     * @return Priority Boost
+     * @return Priority Boost in the range 0.25 to 4.0
      */
     static double getPriorityBoostForBuildDuration(double averageDuration, double waitTime, double threshold) {
         // If average duration is unknown apply no boost
@@ -226,7 +226,7 @@ public class PrioritySorterUtils {
     }
 
     /**
-     * Gets the priority boost based upon the build health
+     * Gets the priority boost based upon the build health whereby unhealthy builds are boosted
      * <p>
      * The {@code positive} parameter controls whether unhealthy builds receive
      * a positive boost or whether they receive a negative boost. If set to true
@@ -242,15 +242,20 @@ public class PrioritySorterUtils {
      *            Whether to adjust positively or not
      * @return Priority Boost in the range of 0.5 to 1.5
      */
-    static double getPriorityBoostForBuildHealth(double health, boolean positive) {
+    static double getPriorityBoostForUnhealthyBuilds(double health, boolean positive) {
         double adjust = ((100d - health) / 100d);
         adjust /= 2d;
         return positive ? 1.0d + adjust : 1.0d - adjust;
     }
     
-    static double getInversePriorityBoostForBuildHealth(double health, boolean positive) {
+    /**
+     * Gets the priority boost based upon the build health whereby healthy builds are boosted
+     * @param health Build Health
+     * @param positive Whether to adjust positively or not
+     * @return Priority Boost in the range of 0.5 to 1.5
+     */
+    static double getPriorityBoostForHealthyBuilds(double health, boolean positive) {
         double adjust = (health - 50d) / 100d;
-        //adjust /= 2d;
         return positive ? 1.0d + adjust : 1.0d - adjust;
     }
 }

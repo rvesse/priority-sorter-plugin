@@ -111,72 +111,72 @@ public class TestPriorityBoosts {
     }
     
     @Test
-    public void testPriorityBoostHealth01() {
+    public void testPriorityBoostUnhealthyBuilds01() {
         // 100% Healthy Build will have no boost
-        double boost = PrioritySorterUtils.getPriorityBoostForBuildHealth(100, true);
+        double boost = PrioritySorterUtils.getPriorityBoostForUnhealthyBuilds(100, true);
         Assert.assertEquals(1.0, boost, DELTA);
     }
     
     @Test
-    public void testPriorityBoostHealth02() {
+    public void testPriorityBoostUnhealthyBuilds02() {
         // 0% Healthy Build will have 1.5 boost
-        double boost = PrioritySorterUtils.getPriorityBoostForBuildHealth(0, true);
+        double boost = PrioritySorterUtils.getPriorityBoostForUnhealthyBuilds(0, true);
         Assert.assertEquals(1.5, boost, DELTA);
     }
     
     @Test
-    public void testPriorityBoostHealth03() {
+    public void testPriorityBoostUnhealthyBuilds03() {
         // 0% Healthy Build will have 0.5 boost when negative boosting
-        double boost = PrioritySorterUtils.getPriorityBoostForBuildHealth(0, false);
+        double boost = PrioritySorterUtils.getPriorityBoostForUnhealthyBuilds(0, false);
         Assert.assertEquals(0.5, boost, DELTA);
     }
     
     @Test
-    public void testPriorityBoostHealth04() {
+    public void testPriorityBoostUnhealthyBuilds04() {
         // 50% Healthy Build will have 1.25 boost
-        double boost = PrioritySorterUtils.getPriorityBoostForBuildHealth(50, true);
+        double boost = PrioritySorterUtils.getPriorityBoostForUnhealthyBuilds(50, true);
         Assert.assertEquals(1.25, boost, DELTA);
     }
     
     @Test
-    public void testPriorityBoostHealth05() {
+    public void testPriorityBoostUnhealthyBuilds05() {
         // 50% Healthy Build will have 0.75 boost when negative boosting
-        double boost = PrioritySorterUtils.getPriorityBoostForBuildHealth(50, false);
+        double boost = PrioritySorterUtils.getPriorityBoostForUnhealthyBuilds(50, false);
         Assert.assertEquals(0.75, boost, DELTA);
     }
     
     @Test
-    public void testInversePriorityBoostHealth01() {
+    public void testPriorityBoostHealthyBuilds01() {
         // 100% Healthy Build will have 1.5 boost
-        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(100, true);
+        double boost = PrioritySorterUtils.getPriorityBoostForHealthyBuilds(100, true);
         Assert.assertEquals(1.5, boost, DELTA);
     }
     
     @Test
-    public void testInversePriorityBoostHealth02() {
+    public void testPriorityBoostHealthyBuilds02() {
         // 0% Healthy Build will have 1.0 boost
-        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(0, true);
+        double boost = PrioritySorterUtils.getPriorityBoostForHealthyBuilds(0, true);
         Assert.assertEquals(0.5, boost, DELTA);
     }
     
     @Test
-    public void testInversePriorityBoostHealth03() {
+    public void testPriorityBoostHealthyBuilds03() {
         // 50% Healthy Build will have 1.0 boost
-        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(50, true);
+        double boost = PrioritySorterUtils.getPriorityBoostForHealthyBuilds(50, true);
         Assert.assertEquals(1.0, boost, DELTA);
     }
     
     @Test
-    public void testInversePriorityBoostHealth04() {
+    public void testPriorityBoostHealthyBuilds04() {
         // 100% Healthy Build will have 0.5 boost when negative boosting
-        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(100, false);
+        double boost = PrioritySorterUtils.getPriorityBoostForHealthyBuilds(100, false);
         Assert.assertEquals(0.5, boost, DELTA);
     }
     
     @Test
-    public void testInversePriorityBoostHealth05() {
+    public void testPriorityBoostHealthyBuilds05() {
         // 0% Healthy Build will have 1.5 boost when negative boosting
-        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(0, false);
+        double boost = PrioritySorterUtils.getPriorityBoostForHealthyBuilds(0, false);
         Assert.assertEquals(1.5, boost, DELTA);
     }
 }
