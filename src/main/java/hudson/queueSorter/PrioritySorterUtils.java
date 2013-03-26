@@ -247,4 +247,10 @@ public class PrioritySorterUtils {
         adjust /= 2d;
         return positive ? 1.0d + adjust : 1.0d - adjust;
     }
+    
+    static double getInversePriorityBoostForBuildHealth(double health, boolean positive) {
+        double adjust = (health - 50d) / 100d;
+        //adjust /= 2d;
+        return positive ? 1.0d + adjust : 1.0d - adjust;
+    }
 }

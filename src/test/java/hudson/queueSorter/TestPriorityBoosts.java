@@ -144,4 +144,39 @@ public class TestPriorityBoosts {
         double boost = PrioritySorterUtils.getPriorityBoostForBuildHealth(50, false);
         Assert.assertEquals(0.75, boost, DELTA);
     }
+    
+    @Test
+    public void testInversePriorityBoostHealth01() {
+        // 100% Healthy Build will have 1.5 boost
+        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(100, true);
+        Assert.assertEquals(1.5, boost, DELTA);
+    }
+    
+    @Test
+    public void testInversePriorityBoostHealth02() {
+        // 0% Healthy Build will have 1.0 boost
+        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(0, true);
+        Assert.assertEquals(0.5, boost, DELTA);
+    }
+    
+    @Test
+    public void testInversePriorityBoostHealth03() {
+        // 50% Healthy Build will have 1.0 boost
+        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(50, true);
+        Assert.assertEquals(1.0, boost, DELTA);
+    }
+    
+    @Test
+    public void testInversePriorityBoostHealth04() {
+        // 100% Healthy Build will have 0.5 boost when negative boosting
+        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(100, false);
+        Assert.assertEquals(0.5, boost, DELTA);
+    }
+    
+    @Test
+    public void testInversePriorityBoostHealth05() {
+        // 0% Healthy Build will have 1.5 boost when negative boosting
+        double boost = PrioritySorterUtils.getInversePriorityBoostForBuildHealth(0, false);
+        Assert.assertEquals(1.5, boost, DELTA);
+    }
 }
