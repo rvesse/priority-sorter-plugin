@@ -46,8 +46,17 @@ public class TestPriorityBoosts {
     public void testPriorityBoostFastDuration04() {
         // Build averages 5 minutes, threshold for slow builds is 10 minutes and 7.5 minutes wait time
         // It has been waiting twice as long over its average duration so should get a 50% boost to the base boost
-        // Thus build should have a boost of 3.0
+        // Thus build should have a boost of 4.0
         double boost = PrioritySorterUtils.getPriorityBoostForBuildDuration(5 * MILLISECONDS_PER_MINUTE, 10 * MILLISECONDS_PER_MINUTE, 10 * MILLISECONDS_PER_MINUTE);
+        Assert.assertEquals(4.0, boost, DELTA);
+    }
+    
+    @Test
+    public void testPriorityBoostFastDuration05() {
+        // Build averages 5 minutes, threshold for slow builds is 10 minutes and 7.5 minutes wait time
+        // It has been waiting four as long over its average duration so should get a 100% boost to the base boost
+        // However boosts are capped at 4.0 so build should have a boost of 4.0
+        double boost = PrioritySorterUtils.getPriorityBoostForBuildDuration(5 * MILLISECONDS_PER_MINUTE, 20 * MILLISECONDS_PER_MINUTE, 10 * MILLISECONDS_PER_MINUTE);
         Assert.assertEquals(4.0, boost, DELTA);
     }
     
@@ -75,6 +84,22 @@ public class TestPriorityBoosts {
         // Thus build should have a boost of 1.5
         double boost = PrioritySorterUtils.getPriorityBoostForBuildDuration(20 * MILLISECONDS_PER_MINUTE, 30 * MILLISECONDS_PER_MINUTE, 10 * MILLISECONDS_PER_MINUTE);
         Assert.assertEquals(1.5, boost, DELTA);
+    }
+    
+    @Test
+    public void testPriorityBoostSlowDuration04() {
+        // Build averages 20 minutes, threshold for slow builds is 5 minutes and zero wait time
+        // Thus build should have a boost of 0.25
+        double boost = PrioritySorterUtils.getPriorityBoostForBuildDuration(20 * MILLISECONDS_PER_MINUTE, 0, 5 * MILLISECONDS_PER_MINUTE);
+        Assert.assertEquals(0.25, boost, DELTA);
+    }
+    
+    @Test
+    public void testPriorityBoostSlowDuration05() {
+        // Build averages 40 minutes, threshold for slow builds is 5 minutes and zero wait time
+        // However boosts are capped at 0.25 so build should have a boost of 0.25
+        double boost = PrioritySorterUtils.getPriorityBoostForBuildDuration(20 * MILLISECONDS_PER_MINUTE, 0, 5 * MILLISECONDS_PER_MINUTE);
+        Assert.assertEquals(0.25, boost, DELTA);
     }
     
     @Test

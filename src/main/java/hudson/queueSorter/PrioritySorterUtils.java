@@ -196,8 +196,13 @@ public class PrioritySorterUtils {
             factor = (double) increaser;
         }
 
-        // TODO: Cap min/max factor appropriately so jobs don't get horrendously
+        // Cap min/max factor appropriately so jobs don't get horrendously
         // boosted
+        if (factor < 0.25) {
+            factor = 0.25;
+        } else if (factor > 4.0) {
+            factor = 4.0;
+        }
 
         return factor;
     }
