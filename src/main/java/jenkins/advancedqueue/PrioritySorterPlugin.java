@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2013, Magnus Sandberg, Oleg Nenashev and contributors
+ * Copyright 2013 Magnus Sandberg, Oleg Nenashev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,51 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jenkins.advancedqueue.sorter.strategy;
+package jenkins.advancedqueue;
 
-import hudson.Extension;
-import hudson.model.Queue;
-import jenkins.advancedqueue.sorter.SorterStrategy;
-import jenkins.advancedqueue.sorter.SorterStrategyDescriptor;
-import jenkins.advancedqueue.strategy.Messages;
-import org.kohsuke.stapler.DataBoundConstructor;
+import static hudson.init.InitMilestone.JOB_LOADED;
+import hudson.Plugin;
+import hudson.init.Initializer;
+
+import java.util.logging.Logger;
+
+import jenkins.advancedqueue.sorter.AdvancedQueueSorter;
 
 /**
+ * Plugin is the staring point of the Priority Sorter Plugin.
+ * 
+ * Used to make sure that the data is initialized at startup.
+ * 
  * @author Magnus Sandberg
- * @since 2.0
+ * @since 2.3
  */
-public class FIFOStrategy extends SorterStrategy {
+public class PrioritySorterPlugin extends Plugin {
 
-    @DataBoundConstructor
-    public FIFOStrategy() {
-    }
+	private final static Logger LOGGER = Logger.getLogger(PrioritySorterPlugin.class.getName());
 
-    @Override
-    public final int getDefaultPriority() {
-        return 1;
-    }
+	@Initializer(after = JOB_LOADED)
+	public static void init() {
+		// Check for Legacy Mode and init the Configuration
+		LOGGER.info("Configuring the Priority Sorter ...");
+		PrioritySorterConfiguration.init();
+		// If Legacy Mode - init the Queue and sort the loaded Queue items
+		if (!PrioritySorterConfiguration.get().getLegacyMode()) {
+			LOGGER.info("Sorting existing Queue ...");
+			AdvancedQueueSorter.init();
+		}
+	}
 
-    @Override
-    public final int getNumberOfPriorities() {
-        return 1;
-    }
-
-    @Override
-    public float onNewItem(Queue.Item item) {
-        return item.getInQueueSince();
-    }
-
-    @Extension
-    public static class DescriptorImpl extends SorterStrategyDescriptor {
-
-        @Override
-        public String getDisplayName() {
-            return Messages.SorterStrategy_FIFO_displayName();
-        }
-
-        @Override
-        public String getShortName() {
-            return Messages.SorterStrategy_FIFO_shortName();
-        }
-    }
 }

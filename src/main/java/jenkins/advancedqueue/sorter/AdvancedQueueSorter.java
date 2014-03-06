@@ -26,18 +26,20 @@ package jenkins.advancedqueue.sorter;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Queue.BuildableItem;
+import hudson.model.Queue.Item;
 import hudson.model.Queue.LeftItem;
-import hudson.model.Queue.WaitingItem;
 import hudson.model.queue.QueueSorter;
 import hudson.queueSorter.PrioritySorterQueueSorter;
 
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import jenkins.advancedqueue.PriorityConfiguration;
 import jenkins.advancedqueue.PrioritySorterConfiguration;
+import static jenkins.advancedqueue.ItemTransitionLogger.*;
 
 /**
  * @author Magnus Sandberg
@@ -46,23 +48,27 @@ import jenkins.advancedqueue.PrioritySorterConfiguration;
 @Extension
 public class AdvancedQueueSorter extends QueueSorter {
 
-	// Keeps track of what weighted-prio each buildableItems item has
-	Map<Integer, Float> item2weight = new HashMap<Integer, Float>();
+	private final static Logger LOGGER = Logger.getLogger("PrioritySorter.Queue.Sorter");
 
 	public AdvancedQueueSorter() {
-		super();
+	}
+
+	static public void init() {
 		List<BuildableItem> items = Queue.getInstance().getBuildableItems();
+		// Sort the queue in the order the items entered the queue
+		// so that onNewItem() happens in the correct order below
 		Collections.sort(items, new Comparator<BuildableItem>() {
 			public int compare(BuildableItem o1, BuildableItem o2) {
-				return o1.id - o2.id;
+				return (int) (o1.getInQueueSince() - o2.getInQueueSince());
 			}
 		});
+		AdvancedQueueSorter advancedQueueSorter = AdvancedQueueSorter.get();
 		for (BuildableItem item : items) {
-			final SorterStrategy prioritySorterStrategy = 
-                                PrioritySorterConfiguration.get().getStrategy();
-			final float weight = prioritySorterStrategy.onNewItem(item);
-			item2weight.put(item.id, weight);
+			advancedQueueSorter.onNewItem(item);
+			// Listener called before we get here so make sure we mark buildable
+			QueueItemCache.get().getItem(item.id).setBuildable();
 		}
+		LOGGER.fine("Initialized the QueueSorter with " + items.size() + " Buildable Items");
 	}
 
 	@Override
@@ -74,8 +80,8 @@ public class AdvancedQueueSorter extends QueueSorter {
 		// Sort
 		Collections.sort(items, new Comparator<BuildableItem>() {
 			public int compare(BuildableItem o1, BuildableItem o2) {
-				float o1weight = item2weight.get(o1.id);
-				float o2weight = item2weight.get(o2.id);
+				float o1weight = getCalculatedWeight(o1);
+				float o2weight = getCalculatedWeight(o2);
 				if (o1weight > o2weight) {
 					return 1;
 				}
@@ -85,25 +91,51 @@ public class AdvancedQueueSorter extends QueueSorter {
 				return (int) (o1.getInQueueSince() - o2.getInQueueSince());
 			}
 		});
+		//
+		if (items.size() > 0 && LOGGER.isLoggable(Level.FINE)) {
+			float minWeight = QueueItemCache.get().getItem(items.get(0).id).getWeight();
+			float maxWeight = QueueItemCache.get().getItem(items.get(items.size() - 1).id).getWeight();
+			LOGGER.log(Level.FINE, "Sorted {0} Buildable Items with Min Weight {1} and Max Weight {2}", new Object[] { items.size(), minWeight, maxWeight });
+		}
 	}
 
-	public void onEnterWaiting(WaitingItem wi) {
-		final SorterStrategy prioritySorterStrategy = 
-                        PrioritySorterConfiguration.get().getStrategy();
-		final float weight = prioritySorterStrategy.onNewItem(wi);
-		item2weight.put(wi.id, weight);
+	/**
+	 * Returned the calculated, cached, weight or calculates the weight if missing. Should only be
+	 * called when the value should already be there, if the item is new {@link #onNewItem(Item)} is
+	 * the method to call.
+	 * 
+	 * @param item the item to get the weight for
+	 * @return the calculated weight
+	 */
+	private float getCalculatedWeight(BuildableItem item) {
+		try {
+			return QueueItemCache.get().getItem(item.id).getWeight();
+		} catch (NullPointerException e) {
+			onNewItem(item);
+			return QueueItemCache.get().getItem(item.id).getWeight();
+		}
+	}
+
+	public void onNewItem(Item item) {
+		final SorterStrategy prioritySorterStrategy = PrioritySorterConfiguration.get().getStrategy();
+		ItemInfo itemInfo = new ItemInfo(item);
+		PriorityConfiguration.get().getPriority(item, itemInfo);
+		prioritySorterStrategy.onNewItem(item, itemInfo);
+		QueueItemCache.get().addItem(itemInfo);
+		logNewItem(itemInfo);
 	}
 
 	public void onLeft(LeftItem li) {
-		final SorterStrategy prioritySorterStrategy = 
-                        PrioritySorterConfiguration.get().getStrategy();
-		Float weight = item2weight.remove(li.id);
+		final SorterStrategy prioritySorterStrategy = PrioritySorterConfiguration.get().getStrategy();
+		ItemInfo itemInfo = QueueItemCache.get().removeItem(li.id);
+		Float weight = itemInfo.getWeight();
 		if (li.isCancelled()) {
 			prioritySorterStrategy.onCanceledItem(li);
+			logCanceledItem(itemInfo);
 		} else {
 			prioritySorterStrategy.onStartedItem(li, weight);
+			logStartedItem(itemInfo);
 		}
-
 	}
 
 	static public AdvancedQueueSorter get() {

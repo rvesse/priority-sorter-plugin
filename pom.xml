@@ -7,7 +7,7 @@
 		<version>1.520</version>
 	</parent>
 	<artifactId>PrioritySorter</artifactId>
-	<version>2.0-SNAPSHOT</version>
+	<version>2.7-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>Jenkins Priority Sorter Plugin</name>
 	<description>This plugin allows for the build queue to be sorted based on configurable Sorting and Priority Assigment Strategies.</description>
@@ -35,7 +35,7 @@
 			</roles>
 			<timezone>CET</timezone>
 		</developer>
-        <developer>
+                <developer>
 			<id>rvesse</id>
 			<name>Rob Vesse</name>
 			<email>rvesse@vdesign-studios.com</email>
@@ -44,6 +44,7 @@
 			</roles>
 			<timezone>GMT</timezone>
 		</developer>
+		<!-- Removed not to show on Wiki 
 		<developer>
 			<id>bklarson</id>
 			<name>Brad Larson</name>
@@ -54,6 +55,7 @@
 			</roles>
 			<timezone>-6</timezone>
 		</developer>
+		 -->
 	</developers>
 
 	<build>
